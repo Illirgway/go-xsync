@@ -1,3 +1,3 @@
 module github.com/Illirgway/go-xsync
 
-go 1.9
+go 1.18
