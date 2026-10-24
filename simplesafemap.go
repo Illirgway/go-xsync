@@ -174,7 +174,7 @@ func (m *SimpleSafeMapT[K, V]) CompareAndDelete(key K, old V) (deleted bool) {
 }
 */
 
-func (m *SimpleSafeMapT[K, V]) Range(f func(key K, value V) bool) {
+func (m *SimpleSafeMapT[K, V]) Range(f func(key K, value V) (next bool)) {
 
 	m.lock.RLock()
 	defer m.lock.RUnlock() // defer due to f
@@ -186,6 +186,30 @@ func (m *SimpleSafeMapT[K, V]) Range(f func(key K, value V) bool) {
 
 	for k, v := range m.m {
 		if !f(k, v) {
+			break
+		}
+	}
+}
+
+func (m *SimpleSafeMapT[K, V]) RangeDelete(f func(key K, value V) (remove bool, next bool)) {
+
+	m.lock.Lock()
+	defer m.lock.Unlock() // defer due to f and delete
+
+	// fast-check
+	if len(m.m) == 0 /* implies `m.m == nil` */ {
+		return
+	}
+
+	for k, v := range m.m {
+
+		remove, next := f(k, v)
+
+		if remove {
+			delete(m.m, k)
+		}
+
+		if !next {
 			break
 		}
 	}
